@@ -15,11 +15,11 @@ export default async function handler(req,res){
  const lead={email,name,score:Number(b.score)||0,persona:clip(b.persona,50),pain:clip(b.pain,50),goal:clip(b.goal,50),revenue:clip(b.revenue,50),hours:clip(b.hours,20),source:'content-automation-score'};
  const send=async payload=>fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});
  if(b.action==='research'){
-   const research={...lead,productInterest:clip(b.productInterest,160),price:clip(b.price,80),taskToRemove:clip(b.magic,2000)};
-   if(!research.productInterest||!research.price)return res.status(400).json({error:'Choose what you need help with and a price.'});
+   const research={...lead,deliveryPreference:clip(b.deliveryPreference,30),productInterest:clip(b.productInterest,160),price:clip(b.price,80),taskToRemove:clip(b.magic,2000)};
+   if(!['diy','done-for-you'].includes(research.deliveryPreference)||!research.productInterest||(research.deliveryPreference==='diy'&&!research.price))return res.status(400).json({error:'Choose DIY or done-for-you, what you need help with, and a DIY price when applicable.'});
    const rows=Object.entries(research).map(([k,v])=>`<tr><td style="padding:5px 12px"><b>${esc(k)}</b></td><td>${esc(v)}</td></tr>`).join('');
    try{
-     const alert=await send({from:FROM,to:[ALERT_TO],reply_to:email,subject:`Content Automation research — ${research.score}/100 — ${name}`,html:`<h2>Assessment follow-up answers</h2><table>${rows}</table>`});
+     const alert=await send({from:FROM,to:[ALERT_TO],reply_to:email,subject:`${research.deliveryPreference==='diy'?'DIY course early access':'Done-for-you call interest'} — ${research.score}/100 — ${name}`,html:`<h2>Assessment follow-up answers</h2><table>${rows}</table>`});
      if(!alert.ok)throw new Error('research alert '+alert.status+' '+await alert.text());
      return res.status(200).json({ok:true});
    }catch(e){console.error('research capture failed',e);return res.status(502).json({error:'Could not send your answers right now. Please try again.'});}
